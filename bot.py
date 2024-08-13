@@ -44,9 +44,11 @@ def handle_user_input(message):
     if state == "get":
         messages = parser.showTerminae(numbers).split('\n\n')
         for i in messages:
-            bot.send_message(message.chat.id, i, parse_mode="html")
+            if i:
+                bot.send_message(message.chat.id, i, parse_mode="html")
+                continue
     elif state == "update":
-        bot.send_message(message.chat.id, parser.checkTerminae(numbers))
+        bot.send_message(message.chat.id, parser.checkTerminae(numbers), parse_mode="html")
     else:
         pass
 

@@ -17,8 +17,10 @@ def main():
     #     print("Обновлено расписание:")
     #     for stop in updated_stops:
     #         print(stop)
-    parser.showTerminae([81])
-    parser.listRoutes("bus")
+    # parser.showTerminae([81])
+    # parser.listRoutes("bus")
+    # output = parser.showTerminae([100, 81, 7])
+    # print(output)
 
 class PTParser:
     def __init__(self):
@@ -30,6 +32,9 @@ class PTParser:
     def update(self):
         url_buses = "https://m.bus-transport.ru/addresses/2/routes-list/0/"
         url_trams = "https://m.bus-transport.ru/addresses/2/routes-list/2/"
+        url_taxis = "https://m.bus-transport.ru/addresses/2/routes-list/3/"
+        url_intercity_trains = "https://m.bus-transport.ru/addresses/2/routes-list/4/"
+        url_intercity_buses = "https://m.bus-transport.ru/addresses/2/routes-list/6/"
         self.bus = self.parseRoutes(url_buses, "bus")
 
     def getRoute(self, number):
@@ -91,16 +96,20 @@ class PTParser:
         update = []
         for number in routes:
             route = self.getRoute(number)
+            if not route:
+                print("Ошибка: маршрута", number, "не существует")
+                continue
             timetable_s = (self.parseTime(route["stops_straight"][0][1], t), self.parseTime(route["stops_straight"][0][1], date_weekend))
-            timetable_o = (self.parseTime(route["stops_opposite"][0][1], t), self.parseTime(route["stops_opposite"][0][1], date_weekend))
             file_s = "./timetables/" + route["terminus_s"] + ".pkl"
-            file_o = "./timetables/" + route["terminus_o"] + ".pkl"
             update_s = self.writeTimetable(file_s, timetable_s)
-            update_o = self.writeTimetable(file_o, timetable_o)
             if update_s:
                 update.append(route["number"] + " — " + route["stops_straight"][0][0])
-            if update_o:
-                update.append(route["number"] + " — " + route["stops_opposite"][0][0])
+            if route["stops_opposite"]:
+                timetable_o = (self.parseTime(route["stops_opposite"][0][1], t), self.parseTime(route["stops_opposite"][0][1], date_weekend))
+                file_o = "./timetables/" + route["terminus_o"] + ".pkl"
+                update_o = self.writeTimetable(file_o, timetable_o)
+                if update_o:
+                    update.append(route["number"] + " — " + route["stops_opposite"][0][0])
         if len(update) > 0:
             print("Обновлено расписание:")
             for i in update:
@@ -113,12 +122,15 @@ class PTParser:
         sys.stdout = output
         for number in routes:
             route = self.getRoute(number)
+            if not route:
+                print("Ошибка: маршрута", number, "не существует\n")
+                continue
             file_s = "./timetables/" + route["terminus_s"] + ".pkl"
             file_o = "./timetables/" + route["terminus_o"] + ".pkl"
             if not os.path.exists(file_s) or os.path.getsize(file_s) == 0:
-                print("Ошибка. Нет данных для маршрута номер", number)
-                break
-            print("<b>Расписание маршрута ", number, "</b>")
+                print("Ошибка. Нет данных для маршрута", number, "\n")
+                continue
+            print("<b>Расписание маршрута", number, "</b>")
             print("Отправления с остановки " + route["stops_straight"][0][0] + ":")
             print(' '.join(self.readTimetable(file_s)[0]))
             print("по выходным дням")
@@ -127,7 +139,7 @@ class PTParser:
             print(' '.join(self.readTimetable(file_o)[0]))
             print("по выходным дням:")
             print(' '.join(self.readTimetable(file_o)[1]))
-            print('\n')
+            print()
         sys.stdout = sys.__stdout__
         return output.getvalue()
 
