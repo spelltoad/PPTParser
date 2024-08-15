@@ -42,7 +42,7 @@ def handle_user_input(message):
     numbers = input_data.split(',')
     numbers = [num.strip() for num in numbers]
     if state == "get":
-        messages = parser.showTerminae(numbers).split('\n\n')
+        messages = parser.showTerminae(numbers, "bus").split('\n\n')
         for i in messages:
             if i:
                 bot.send_message(message.chat.id, i, parse_mode="html")

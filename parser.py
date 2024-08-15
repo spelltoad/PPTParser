@@ -10,7 +10,6 @@ import sys
 
 def main():
     parser = PTParser()
-    # parser.update()
     # parser.getTimetable(14)
     # updated_stops = parser.checkTerminae([81])
     # if len(updated_stops) > 0:
@@ -25,20 +24,62 @@ def main():
 class PTParser:
     def __init__(self):
         self.url = "https://m.bus-transport.ru/"
-        if (os.path.isfile("./output.json") and os.path.getsize("./output.json")) > 0:
-            with open("./output.json", 'r') as json_file:
+        bus = "bus_routes.json"
+        tram = "tram_routes.json"
+        taxi = "taxi_routes.json"
+        localbus = "localbus_routes.json"
+        train = "train_routes.json"
+        intercitybus = "intercitybus_routes.json"
+
+        if (os.path.isfile(bus) and os.path.getsize(bus)) > 0:
+            with open(bus, 'r') as json_file:
                 self.bus = json.load(json_file)
+        if (os.path.isfile(tram) and os.path.getsize(tram)) > 0:
+            with open(tram, 'r') as json_file:
+                self.tram = json.load(json_file)
+        if (os.path.isfile(taxi) and os.path.getsize(taxi)) > 0:
+            with open(taxi, 'r') as json_file:
+                self.taxi = json.load(json_file)
+        if (os.path.isfile(localbus) and os.path.getsize(localbus)) > 0:
+            with open(localbus, 'r') as json_file:
+                self.localbus = json.load(json_file)
+        if (os.path.isfile(train) and os.path.getsize(train)) > 0:
+            with open(train, 'r') as json_file:
+                self.train = json.load(json_file)
+        if (os.path.isfile(intercitybus) and os.path.getsize(intercitybus)) > 0:
+            with open(intercitybus, 'r') as json_file:
+                self.intercitybus = json.load(json_file)
 
     def update(self):
         url_buses = "https://m.bus-transport.ru/addresses/2/routes-list/0/"
+        url_trolleys = "https://m.bus-transport.ru/addresses/2/routes-list/2/"
         url_trams = "https://m.bus-transport.ru/addresses/2/routes-list/2/"
         url_taxis = "https://m.bus-transport.ru/addresses/2/routes-list/3/"
-        url_intercity_trains = "https://m.bus-transport.ru/addresses/2/routes-list/4/"
+        url_local_buses = "https://m.bus-transport.ru/addresses/2/routes-list/4/"
+        url_intercity_trains = "https://m.bus-transport.ru/addresses/2/routes-list/5/"
         url_intercity_buses = "https://m.bus-transport.ru/addresses/2/routes-list/6/"
         self.bus = self.parseRoutes(url_buses, "bus")
+        self.tram = self.parseRoutes(url_trams, "tram")
+        self.taxi = self.parseRoutes(url_taxis, "taxi")
+        self.localbus = self.parseRoutes(url_local_buses, "localbus")
+        self.train = self.parseRoutes(url_intercity_trains, "train")
+        self.intercitybus = self.parseRoutes(url_intercity_buses, "intercitybus")
 
-    def getRoute(self, number):
-        output = [item for item in self.bus if item["number"] == str(number)]
+    def getRoute(self, number, type):
+        match type:
+            case "bus":
+                routes = self.bus
+            case "tram":
+                routes = self.tram
+            case "taxi":
+                routes = self.taxi
+            case "localbus":
+                routes = self.localbus
+            case "intercitybus":
+                routes = self.intercitybus
+            case "train":
+                routes = self.train
+        output = [item for item in routes if item["number"] == str(number)]
         if not output:
             return False
         else:
@@ -83,7 +124,7 @@ class PTParser:
             output = pickle.load(f)
         return output
 
-    def checkTerminae(self, routes):
+    def checkTerminae(self, routes, type):
         output = io.StringIO()
         sys.stdout = output
         t = datetime.date.today()
@@ -95,7 +136,7 @@ class PTParser:
             t = t - timedelta(2)
         update = []
         for number in routes:
-            route = self.getRoute(number)
+            route = self.getRoute(number, type)
             if not route:
                 print("Ошибка: маршрута", number, "не существует")
                 continue
@@ -117,11 +158,11 @@ class PTParser:
         sys.stdout = sys.__stdout__
         return output.getvalue()
         
-    def showTerminae(self, routes):
+    def showTerminae(self, routes, type):
         output = io.StringIO()
         sys.stdout = output
         for number in routes:
-            route = self.getRoute(number)
+            route = self.getRoute(number, type)
             if not route:
                 print("Ошибка: маршрута", number, "не существует\n")
                 continue
@@ -154,6 +195,7 @@ class PTParser:
 
     def parseRoutes(self, url, type):
         page = requests.get(url)
+        file_name = "{}_routes.json".format(type)
         soup = BeautifulSoup(page.content, "html.parser")
         routes = soup.find_all("a")
         output = []
@@ -175,7 +217,7 @@ class PTParser:
                     "terminus_o": type + "_" + str(route_number) + "o"
                 }
                 output.append(route_entry)
-        with open("./output.json", 'w') as json_file:
+        with open(file_name, 'w') as json_file:
             json.dump(output, json_file, indent=4, ensure_ascii=False)
         
 
